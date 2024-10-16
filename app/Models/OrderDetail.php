@@ -1,26 +1,33 @@
 <?php
 
-namespace Database\Seeders;
+namespace App\Models;
 
-use Illuminate\Database\Seeder;
-use App\Models\OrderDetail;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 
-class OrderDetailSeeder extends Seeder
+class OrderDetail extends Model
 {
-    public function run()
-    {
-        OrderDetail::create([
-            'order_id' => 1,
-            'product_id' => 1,  // Laptop
-            'quantity' => 1,
-            'unit_price' => 1500.00
-        ]);
+    use HasFactory;
 
-        OrderDetail::create([
-            'order_id' => 2,
-            'product_id' => 3,  // T-shirt
-            'quantity' => 2,
-            'unit_price' => 20.00
-        ]);
+    protected $primaryKey = 'order_id';  // Primary key dari tabel order_details
+
+    protected $fillable = [
+        'order_id',
+        'user_id',
+        'order_date',
+        'created_at',
+        'updated_at'
+    ];
+
+    // Relasi ke tabel produk (Order detail belongs to a product)
+    public function product()
+    {
+        return $this->belongsTo(Product::class, 'product_id', 'product_id');
+    }
+
+    // Relasi ke tabel user (Order detail belongs to a user)
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'user_id', 'id');
     }
 }
