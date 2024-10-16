@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Product;
 use App\Models\Category;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\File;
 
 class ProductController extends Controller
 {
@@ -31,6 +32,7 @@ class ProductController extends Controller
     // Fungsi untuk menyimpan produk baru
     public function store(Request $request)
     {
+        // Validasi data input
         $request->validate([
             'product_name' => 'required|string|max:255',
             'category_id' => 'required|exists:categories,category_id',
@@ -40,17 +42,27 @@ class ProductController extends Controller
             'gambar' => 'nullable|image|max:2048',
             'deskripsi' => 'nullable|string'
         ]);
-
+    
+        // Cek apakah produk dengan nama yang sama sudah ada (case-insensitive)
+        $productExists = Product::whereRaw('LOWER(product_name) = ?', [strtolower($request->product_name)])->exists();
+    
+        if ($productExists) {
+            return redirect()->back()->withErrors(['product_name' => 'Produk dengan nama yang sama sudah ada.'])->withInput();
+        }
+    
+        // Simpan data produk
         $data = $request->all();
         if ($request->hasFile('gambar')) {
             $imageName = time() . '.' . $request->gambar->extension();
             $request->gambar->move(public_path('assets/images'), $imageName);
             $data['gambar'] = 'assets/images/' . $imageName;  // Store the path in the database
         }
-
+    
         Product::create($data);
+    
         return redirect()->route('products.index')->with('success', 'Produk berhasil ditambahkan.');
     }
+    
 
     // Fungsi untuk mengedit produk
     public function update(Request $request, $id)
@@ -94,6 +106,14 @@ class ProductController extends Controller
     {
         // Hapus produk berdasarkan product_id
         $product = Product::where('product_id', $id)->firstOrFail(); // Cek apakah produk ada
+    
+        // Hapus gambar dari direktori lokal jika ada
+        $pathimg = public_path($product->gambar); // Dapatkan path gambar
+    
+        if (File::exists($pathimg)) {
+            File::delete($pathimg); // Hapus gambar dari direktori lokal
+        }
+    
         $product->delete(); // Hapus produk
     
         // Redirect ke halaman produk dengan pesan sukses
